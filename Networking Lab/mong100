@@ -1,0 +1,273 @@
+[LocalizedFileNames]
+Migrating to Passive Journal- Existing Members.mp4=@Migrating to Passive Journal- Existing Members,0
+Passive Journal- Thank You for Joining Passive Journal.mp4=@Passive Journal- Thank You for Joining Passive Journal,0
+
+Time and Date
+Client....
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.Date;
+import java.util.Scanner;
+
+import static java.lang.Thread.sleep;
+
+public class Client {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        System.out.println("Client started..");
+        Socket socket = new Socket("127.0.0.1", 22223);
+        System.out.println("Client Connected..");
+
+        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+        ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+        int ct=2;
+        while (ct>0) {
+            ct--;
+          //  sleep(3333);
+           // Scanner sc = new Scanner(System.in);
+
+            String message = new Date().toString();
+
+            if(message.equals("exit")){
+                break;
+            }
+
+            //sent to server...
+            oos.writeObject(message);
+
+            try {
+                //receive from server..
+                Object fromServer = ois.readObject();
+                System.out.println("From Server: " + (String) fromServer);
+
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        socket.close();
+    }
+}
+
+server.....
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class Server {
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(22223);
+        System.out.println("Server Started..");
+
+        while (true) {
+            Socket socket = serverSocket.accept();
+            System.out.println("Client connected..");
+
+            // new Server Thread Start.....
+            new ServerThread(socket);
+
+
+        }
+    }
+}
+
+
+class ServerThread implements Runnable {
+
+    Socket clientSocket;
+    Thread t;
+
+    ServerThread(Socket clientSocket){
+        this.clientSocket = clientSocket;
+        t= new Thread(this);
+        t.start();
+    }
+
+
+    @Override
+    public void run() {
+
+        try {
+            ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
+            ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+
+            while (true) {
+                //read from client...
+                Object cMsg = ois.readObject();
+
+                if(cMsg==null)
+                    break;
+                System.out.println("From Client: " + (String) cMsg);
+
+                String serverMsg = (String) cMsg;
+                serverMsg = serverMsg.toUpperCase();
+
+                //send to client..
+                oos.writeObject(serverMsg);
+            }
+
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+echo clien and server using TCP
+
+Client......
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.Scanner;
+
+public class Client {
+    public static void main(String[] args) throws IOException {
+        System.out.println("Client Started..");
+        Socket socket=new Socket("127.0.0.1",22222);
+
+        System.out.println("Client connected..");
+
+        ObjectOutputStream oos =new ObjectOutputStream(socket.getOutputStream());
+        ObjectInputStream ois=new ObjectInputStream(socket.getInputStream());
+
+
+        Scanner sc=new Scanner(System.in);
+
+        String message=sc.nextLine();
+
+        //send to server
+        oos.writeObject(message);
+        try {
+            //receive server
+            Object fromServer=ois.readObject();
+            System.out.println("From Server : "+(String)fromServer);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+
+    }
+}
+
+
+
+Server....
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class Server {
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
+        ServerSocket serverSocket=new ServerSocket(22222);
+
+        System.out.println("Server Started..");
+        while(true)
+        {
+            Socket socket=serverSocket.accept();
+
+            System.out.println("Client connected..");
+
+            ObjectInputStream ois=new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream oos=new ObjectOutputStream(socket.getOutputStream());
+
+            try {
+
+                // read from client
+                Object cMsg=ois.readObject();
+                System.out.println("From Client: "+(String)cMsg);
+                String serverMsg=(String)cMsg;
+                serverMsg=serverMsg.toUpperCase();
+
+                // send to client
+                oos.writeObject(serverMsg);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+}
+
+Client and server Application chat using TCP
+
+client...
+
+import java.net.*;
+import java.io.*;
+public class Chatclient
+{
+    public static void main(String args[]) throws Exception
+    {
+        Socket sk=new Socket("127.0.0.1",2000);
+        BufferedReader sin=new BufferedReader(new
+                InputStreamReader(sk.getInputStream()));
+        PrintStream sout=new PrintStream(sk.getOutputStream());
+        BufferedReader stdin=new BufferedReader(new InputStreamReader(System.in));
+        String s;
+        while ( true )
+        {
+            System.out.print("Client : ");
+            s=stdin.readLine();
+            sout.println(s);
+            s=sin.readLine();
+            System.out.print("Server : "+s+"\n");
+            if ( s.equalsIgnoreCase("BYE") )
+                break;
+        }
+        sk.close();
+        sin.close();
+        sout.close();
+        stdin.close();
+    }
+}
+
+server....
+import java.net.*;
+import java.io.*;
+
+public class Chatserver
+{
+    public static void main(String args[]) throws Exception
+    {
+        ServerSocket ss=new ServerSocket(2000);
+        Socket sk=ss.accept();
+        BufferedReader cin=new BufferedReader(new
+                InputStreamReader(sk.getInputStream()));
+        PrintStream cout=new PrintStream(sk.getOutputStream());
+        BufferedReader stdin=new BufferedReader(new InputStreamReader(System.in));
+        String s;
+        while ( true )
+        {
+            s=cin.readLine();
+            if (s.equalsIgnoreCase("END"))
+            {
+                cout.println("BYE");
+                break;
+            }
+            System. out.print("Client : "+s+"\n");
+            System.out.print("Server : ");
+            s=stdin.readLine();
+            cout.println(s);
+        }
+        ss.close();
+        sk.close();
+        cin.close();
+        cout.close();
+        stdin.close();
+    }
+}
+
